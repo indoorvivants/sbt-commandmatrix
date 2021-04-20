@@ -1,0 +1,11 @@
+> verify-2_12-jvm
+$ exists result-verify-jvm-2.12.13
+> verify-2_13-jvm
+$ exists result-verify-jvm-2.13.5
+> verify-2_12-js
+$ exists result-verify-js-2.12.13
+-> verify-2_13-js
+> verifyCustom-2_12-jvm-config12
+$ exists result-custom-jvm-2.12.13-1.2
+> verifyCustom-2_13-jvm-config13
+$ exists result-custom-jvm-2.13.5-1.3
