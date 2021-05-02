@@ -53,7 +53,7 @@ trait CrossCommands {
       matrix: Seq[sbt.internal.ProjectMatrix],
       dimensions: Seq[Dimension]
   ): Seq[Command] = {
-    val allProjects = matrix.flatMap(_.findAll())
+    val allProjects = matrix.flatMap(_.allProjects())
 
     val buckets = List.newBuilder[(Seq[String], Project)]
 

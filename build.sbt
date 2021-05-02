@@ -3,7 +3,7 @@ lazy val core = project
   .settings(name := "sbt-commandmatrix")
   .enablePlugins(SbtPlugin)
   .settings(
-    addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.7.0-SNAPSHOT"),
+    addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.8.0"),
     scriptedLaunchOpts := {
       scriptedLaunchOpts.value ++
         Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
