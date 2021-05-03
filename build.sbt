@@ -18,3 +18,5 @@ inThisBuild(
     organization := "com.indoorvivants"
   )
 )
+
+addCommandAlias("ci", "scripted;publishLocal")
