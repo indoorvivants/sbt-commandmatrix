@@ -15,7 +15,21 @@ publish / skip := true
 
 inThisBuild(
   Seq(
-    organization := "com.indoorvivants"
+    organization := "com.indoorvivants",
+    organizationName := "Anton Sviridov",
+    homepage := Some(url("https://github.com/indoorvivants/sbt-commandmatrix")),
+    startYear := Some(2021),
+    licenses := List(
+      "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
+    ),
+    developers := List(
+      Developer(
+        "velvetbaldmime",
+        "Anton Sviridov",
+        "keynmol@gmail.com",
+        url("https://blog.indoorvivants.com")
+      )
+    )
   )
 )
 
