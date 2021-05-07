@@ -1,3 +1,5 @@
+import commandmatrix._
+
 lazy val configKey = settingKey[String]("")
 
 lazy val scala212 = "2.12.13"
@@ -51,19 +53,17 @@ lazy val verifyCustom = taskKey[Unit]("")
 
 inThisBuild(
   Seq(
-    commands ++= crossCommand(
+    commands ++= CrossCommand.single(
       "verify",
-      alias = None,
-      matrix = Seq(core),
+      matrices = Seq(core),
       dimensions = Seq(
         Dimension.scala("2.12"),
         Dimension.platform()
       )
     ),
-    commands ++= crossCommand(
+    commands ++= CrossCommand.single(
       "verifyCustom",
-      alias = None,
-      matrix = Seq(custom),
+      matrices = Seq(custom),
       dimensions = Seq(
         Dimension.scala("2.12"),
         Dimension.platform(),
