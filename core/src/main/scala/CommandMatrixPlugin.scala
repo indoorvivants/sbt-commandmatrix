@@ -29,6 +29,8 @@ object CommandMatrixPlugin extends sbt.AutoPlugin {
 }
 
 trait Experimental {
+  import CommandType._
+
   object CrossCommand {
     def single(
         cmd: String,
@@ -37,9 +39,8 @@ trait Experimental {
         filter: Seq[VirtualAxis] => Boolean = _ => true
     ): Seq[Command] =
       crossCommand(
-        cmd,
-        alias = None,
-        matrix = matrices,
+        Single(cmd),
+        matrices = matrices,
         dimensions = dimensions,
         filter = filter
       )
@@ -51,8 +52,8 @@ trait Experimental {
         filter: Seq[VirtualAxis] => Boolean = _ => true
     ): Seq[Command] =
       cmds.flatMap(cmd =>
-        single(
-          cmd = cmd,
+        crossCommand(
+          command = Single(cmd),
           matrices = matrices,
           dimensions = dimensions,
           filter = filter
@@ -66,25 +67,113 @@ trait Experimental {
         dimensions: Seq[Dimension],
         filter: Seq[VirtualAxis] => Boolean = _ => true
     ) = crossCommand(
-      cmd,
-      alias = Some(alias),
-      matrix = matrices,
+      SingleAliased(cmd, alias),
+      matrices = matrices,
       dimensions = dimensions,
       filter = filter
     )
 
+    def composite(
+        name: String,
+        commands: Seq[String],
+        matrices: Seq[sbt.internal.ProjectMatrix],
+        dimensions: Seq[Dimension],
+        filter: Seq[VirtualAxis] => Boolean = _ => true
+    ) = crossCommand(
+      command = Composite(name, commands),
+      matrices = matrices,
+      dimensions = dimensions,
+      filter = filter
+    )
+
+    object filter {
+      def isScalaBinary(major: Long, minor: Option[Long] = None)(
+          axes: Seq[VirtualAxis]
+      ): Boolean =
+        axes
+          .collectFirst { case sv: VirtualAxis.ScalaVersionAxis =>
+            sv.scalaVersion
+          }
+          .flatMap { v =>
+            sbt.librarymanagement.CrossVersion.partialVersion(v)
+          } match {
+          case Some((scalaMajor, scalaMinor)) =>
+            minor match {
+              case Some(min) => (scalaMajor, scalaMinor) == (major, min)
+              case None      => scalaMajor == major
+            }
+          case None => false // no valid Scala axis at all
+        }
+
+      def isScalaMajor(major: Long)(axes: Seq[VirtualAxis]) =
+        isScalaBinary(major, None)(axes)
+
+
+      def notScala3(axes: Seq[VirtualAxis]): Boolean =
+        !isScalaMajor(3L)(axes)
+
+      def onlyScala3(axes: Seq[VirtualAxis]): Boolean =
+        isScalaMajor(3L)(axes)
+
+      def notScala2(axes: Seq[VirtualAxis]): Boolean =
+        !isScalaMajor(2L)(axes)
+
+      def onlyScala2(axes: Seq[VirtualAxis]): Boolean =
+        isScalaMajor(2L)(axes)
+
+      def onlyJvm(axes: Seq[VirtualAxis]): Boolean =
+        axes.contains(VirtualAxis.jvm)
+
+      def onlyJs(axes: Seq[VirtualAxis]): Boolean =
+        axes.contains(VirtualAxis.js)
+
+      def onlyNative(axes: Seq[VirtualAxis]): Boolean =
+        axes.contains(VirtualAxis.native)
+
+      def notJvm(axes: Seq[VirtualAxis]): Boolean =
+        !onlyJvm(axes)
+
+      def notJs(axes: Seq[VirtualAxis]): Boolean =
+        !onlyJs(axes)
+
+      def notNative(axes: Seq[VirtualAxis]): Boolean =
+        !onlyNative(axes)
+    }
+
   }
 
-  private def crossCommand(
-      cmd: String,
-      alias: Option[String],
-      matrix: Seq[sbt.internal.ProjectMatrix],
+  private[commandmatrix] sealed trait CommandType
+      extends Product
+      with Serializable
+
+  private[commandmatrix] object CommandType {
+    case class Single(command: String) extends CommandType
+    case class SingleAliased(command: String, alias: String) extends CommandType
+    case class Composite(command: String, delegates: Seq[String])
+        extends CommandType
+  }
+
+  private[commandmatrix] def crossCommand(
+      command: CommandType,
+      matrices: Seq[sbt.internal.ProjectMatrix],
       dimensions: Seq[Dimension],
       filter: Seq[VirtualAxis] => Boolean
   ): Seq[Command] = {
-    val allProjects = matrix.flatMap(_.allProjects())
+    val allProjects = matrices.flatMap(_.allProjects())
 
     val buckets = List.newBuilder[(Seq[String], Project)]
+
+    val resultingCommandName = command match {
+      case Single(name)            => name
+      case SingleAliased(_, alias) => alias
+      case Composite(name, _)      => name
+    }
+
+    val rawCommands = command match {
+      case Composite(_, delegates) => delegates
+      case Single(name)            => Seq(name)
+      case SingleAliased(name, _)  => Seq(name)
+    }
 
     allProjects
       .filter(p => filter(p._2))
@@ -98,9 +187,14 @@ trait Experimental {
       .groupBy(_._1)
       .map { case (segments, results) =>
         val projects = results.map(_._2.id)
-        val groupCmd = alias.getOrElse(cmd) + "-" + segments.mkString("-")
+        val groupCmd = resultingCommandName + "-" + segments.mkString("-")
 
-        groupCmd -> projects.map(id => id + "/" + cmd)
+        val components = for {
+          projectId <- projects
+          cmd <- rawCommands
+        } yield projectId + "/" + cmd
+
+        groupCmd -> components
       }
       .toSeq
       .map { case (alias, subcommands) =>
@@ -112,8 +206,6 @@ trait Experimental {
   }
 
 }
-
-object Experimental extends Experimental
 
 import sbt.VirtualAxis
 import sbt.{Command, Project}
