@@ -19,7 +19,7 @@ jobs:
         ceVersion: ["CE2", "CE3"]
     runs-on: ${{ matrix.os }}
     env:
-      BUILD_KEY: ${{matrix.ceVersion}}_${{matrix.scalaVersion}}_${{matrix.scalaPlatform}}
+      BUILD_KEY: ${{matrix.ceVersion}}-${{matrix.scalaVersion}}-${{matrix.scalaPlatform}}
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2
