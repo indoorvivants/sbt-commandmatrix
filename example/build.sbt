@@ -32,8 +32,10 @@ inThisBuild(
         Dimension.scala("2.12", fullFor3 = true),
         Dimension.platform()
       ),
-      // don't runn codeQuality checks for Scala 3 projects
-      filter = axes => CrossCommand.filter.notScala3(axes)
+      // don't run codeQuality checks for Scala 3 projects
+      filter = axes =>
+        CrossCommand.filter.notScala3(axes) &&
+          CrossCommand.filter.onlyJvm(axes)
     )
   )
 )
