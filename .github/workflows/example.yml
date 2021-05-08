@@ -14,12 +14,12 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         java: [adopt@1.8]
-        scalaVersion: ["2_12", "2_13", "3_0_0_RC2", "3_0_0_RC3"]
+        scalaVersion: ["2_12", "2_13", "3_0_0-RC2", "3_0_0-RC3"]
         scalaPlatform: ["jvm", "js"]
         ceVersion: ["CE2", "CE3"]
     runs-on: ${{ matrix.os }}
     env:
-      BUILD_KEY: ${{matrix.scalaVersion}}_${{matrix.scalaPlatform}}_${{matrix.ceVersion}}
+      BUILD_KEY: ${{matrix.ceVersion}}-${{matrix.scalaVersion}}-${{matrix.scalaPlatform}}
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2
@@ -32,10 +32,10 @@ jobs:
       - name: Run tests
         run: |
           cd example
-          sbt check_$BUILD_KEY
+          sbt check-$BUILD_KEY
 
       - name: Run checks
-        if: matrix.scalaVersion != '3_0_0_RC2' && matrix.scalaVersion != '3_0_0_RC3'
+        if: matrix.scalaVersion != '3_0_0-RC2' && matrix.scalaVersion != '3_0_0-RC3' && matrix.scalaPlatform == 'jvm'
         run: |
           cd example
-          sbt codeQuality_$BUILD_KEY
+          sbt codeQuality-$BUILD_KEY

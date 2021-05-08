@@ -32,8 +32,10 @@ inThisBuild(
         Dimension.scala("2.12", fullFor3 = true),
         Dimension.platform()
       ),
-      // don't runn codeQuality checks for Scala 3 projects
-      filter = axes => CrossCommand.filter.notScala3(axes)
+      // don't run codeQuality checks for Scala 3 projects
+      filter = axes =>
+        CrossCommand.filter.notScala3(axes) &&
+          CrossCommand.filter.onlyJvm(axes)
     )
   )
 )
@@ -55,7 +57,9 @@ lazy val core =
     .customRow(
       scalaVersions = scalaVersions,
       axisValues = Seq(CatsEffect2Axis, VirtualAxis.js),
-      settings = ce2Settings
+      process = (_: Project)
+        .settings(ce2Settings ++ jsSettings)
+        .enablePlugins(ScalaJSPlugin)
     )
     .customRow(
       scalaVersions = scalaVersions,
@@ -65,7 +69,9 @@ lazy val core =
     .customRow(
       scalaVersions = scalaVersions,
       axisValues = Seq(CatsEffect3Axis, VirtualAxis.js),
-      settings = ce3Settings
+      process = (_: Project)
+        .settings(ce2Settings ++ jsSettings)
+        .enablePlugins(ScalaJSPlugin)
     )
     .customRow(
       scalaVersions = scalaVersions,
@@ -73,9 +79,14 @@ lazy val core =
       settings = ce3Settings
     )
 
+lazy val jsSettings = Seq(
+  scalaJSUseMainModuleInitializer := true
+)
+
 lazy val ce3Settings = Seq(
   libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.1.0"
 )
+
 lazy val ce2Settings = Seq(
   libraryDependencies += "org.typelevel" %%% "cats-effect" % "2.5.0"
 )
