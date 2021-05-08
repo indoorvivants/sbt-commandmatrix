@@ -29,13 +29,22 @@ inThisBuild(
       matrices = Seq(core),
       dimensions = Seq(
         catsEffectDimension,
+        // we use `fullFor3` to create a command
+        // for full Scala 3 version (as opposed to just the major.minor)
         Dimension.scala("2.12", fullFor3 = true),
         Dimension.platform()
       ),
       // don't run codeQuality checks for Scala 3 projects
+      // We do this for two reasons:
+      // 1. We're using a version of scalafmt that doesn't work with Scala 3
+      // 2. sbt-explicit-dependencies plugin has issues with Scala.js projects
       filter = axes =>
         CrossCommand.filter.notScala3(axes) &&
-          CrossCommand.filter.onlyJvm(axes)
+          CrossCommand.filter.onlyJvm(axes),
+      // for projects that don't pass the filter above
+      // we can create a noop command
+      // this helps on CI
+      stubMissing = true
     )
   )
 )
