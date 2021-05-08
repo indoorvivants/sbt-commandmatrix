@@ -15,6 +15,11 @@ publish / skip := true
 
 inThisBuild(
   Seq(
+    version := {
+      val orig = (ThisBuild / version).value
+      if (orig.endsWith("-SNAPSHOT") && !sys.env.contains("CI")) "0.1.0-SNAPSHOT"
+      else orig
+    },
     organization := "com.indoorvivants",
     organizationName := "Anton Sviridov",
     homepage := Some(url("https://github.com/indoorvivants/sbt-commandmatrix")),
