@@ -1,5 +1,5 @@
 
-name: CI
+name: Example
 on:
   push:
     branches: ["master"]
@@ -35,7 +35,7 @@ jobs:
           sbt check_$BUILD_KEY
 
       - name: Run checks
-        if: !startsWith(matrix.scalaVersion, '3_0')
+        if: matris.scalaVersion != '3_0_0_RC2' && matrix.scalaVersion != "3_0_0_RC3"
         run: |
           cd example
           sbt codeQuality_$BUILD_KEY
