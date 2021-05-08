@@ -36,10 +36,11 @@ trait Experimental {
         cmd: String,
         matrices: Seq[sbt.internal.ProjectMatrix],
         dimensions: Seq[Dimension],
-        filter: Seq[VirtualAxis] => Boolean = _ => true
+        filter: Seq[VirtualAxis] => Boolean = _ => true,
+        stubMissing: Boolean = false
     ): Seq[Command] =
       crossCommand(
-        Single(cmd),
+        Single(cmd, stubMissing),
         matrices = matrices,
         dimensions = dimensions,
         filter = filter
@@ -49,11 +50,12 @@ trait Experimental {
         cmds: Seq[String],
         matrices: Seq[sbt.internal.ProjectMatrix],
         dimensions: Seq[Dimension],
-        filter: Seq[VirtualAxis] => Boolean = _ => true
+        filter: Seq[VirtualAxis] => Boolean = _ => true,
+        stubMissing: Boolean = false
     ): Seq[Command] =
       cmds.flatMap(cmd =>
         crossCommand(
-          command = Single(cmd),
+          command = Single(cmd, stubMissing),
           matrices = matrices,
           dimensions = dimensions,
           filter = filter
@@ -65,9 +67,10 @@ trait Experimental {
         alias: String,
         matrices: Seq[sbt.internal.ProjectMatrix],
         dimensions: Seq[Dimension],
-        filter: Seq[VirtualAxis] => Boolean = _ => true
+        filter: Seq[VirtualAxis] => Boolean = _ => true,
+        stubMissing: Boolean = false
     ) = crossCommand(
-      SingleAliased(cmd, alias),
+      SingleAliased(cmd, alias, stubMissing),
       matrices = matrices,
       dimensions = dimensions,
       filter = filter
@@ -78,9 +81,10 @@ trait Experimental {
         commands: Seq[String],
         matrices: Seq[sbt.internal.ProjectMatrix],
         dimensions: Seq[Dimension],
-        filter: Seq[VirtualAxis] => Boolean = _ => true
+        filter: Seq[VirtualAxis] => Boolean = _ => true,
+        stubMissing: Boolean = false
     ) = crossCommand(
-      command = Composite(name, commands),
+      command = Composite(name, commands, stubMissing),
       matrices = matrices,
       dimensions = dimensions,
       filter = filter
@@ -107,7 +111,6 @@ trait Experimental {
 
       def isScalaMajor(major: Long)(axes: Seq[VirtualAxis]) =
         isScalaBinary(major, None)(axes)
-
 
       def notScala3(axes: Seq[VirtualAxis]): Boolean =
         !isScalaMajor(3L)(axes)
@@ -142,15 +145,24 @@ trait Experimental {
 
   }
 
-  private[commandmatrix] sealed trait CommandType
-      extends Product
+  private[commandmatrix] sealed abstract class CommandType(
+      val stubMissing: Boolean
+  ) extends Product
       with Serializable
 
   private[commandmatrix] object CommandType {
-    case class Single(command: String) extends CommandType
-    case class SingleAliased(command: String, alias: String) extends CommandType
-    case class Composite(command: String, delegates: Seq[String])
-        extends CommandType
+    case class Single(command: String, override val stubMissing: Boolean)
+        extends CommandType(stubMissing)
+    case class SingleAliased(
+        command: String,
+        alias: String,
+        override val stubMissing: Boolean
+    ) extends CommandType(stubMissing)
+    case class Composite(
+        command: String,
+        delegates: Seq[String],
+        override val stubMissing: Boolean
+    ) extends CommandType(stubMissing)
   }
 
   private[commandmatrix] def crossCommand(
@@ -161,40 +173,49 @@ trait Experimental {
   ): Seq[Command] = {
     val allProjects = matrices.flatMap(_.allProjects())
 
-    val buckets = List.newBuilder[(Seq[String], Project)]
+    val buckets = List.newBuilder[(Seq[String], (Project, Boolean))]
 
     val resultingCommandName = command match {
-      case Single(name)            => name
-      case SingleAliased(_, alias) => alias
-      case Composite(name, _)      => name
+      case Single(name, _)            => name
+      case SingleAliased(_, alias, _) => alias
+      case Composite(name, _, _)      => name
     }
 
     val rawCommands = command match {
-      case Composite(_, delegates) => delegates
-      case Single(name)            => Seq(name)
-      case SingleAliased(name, _)  => Seq(name)
+      case Composite(_, delegates, _) => delegates
+      case Single(name, _)            => Seq(name)
+      case SingleAliased(name, _, _)  => Seq(name)
     }
 
+    val stubMissing = command.stubMissing
+
     allProjects
-      .filter(p => filter(p._2))
-      .foreach { case (proj, axes) =>
+      .map(p => (p._1, p._2, filter(p._2)))
+      .filter { case (_, _, include) =>
+        include || stubMissing
+      }
+      .foreach { case (proj, axes, include) =>
         val found = dimensions
           .map(dim => axes.collectFirst(dim.matchName).getOrElse(dim.default))
-        buckets += (found -> proj)
+        buckets += found -> (proj, include)
       }
 
     buckets.result
       .groupBy(_._1)
       .map { case (segments, results) =>
-        val projects = results.map(_._2.id)
+        val projects = results
         val groupCmd = resultingCommandName + "-" + segments.mkString("-")
 
         val components = for {
-          projectId <- projects
+          proj <- projects
+          id = proj._2._1.id
+          include = proj._2._2
           cmd <- rawCommands
-        } yield projectId + "/" + cmd
 
-        groupCmd -> components
+          result = if (!include && stubMissing) "" else id + "/" + cmd
+        } yield result
+
+        groupCmd -> components.filter(_ != "")
       }
       .toSeq
       .map { case (alias, subcommands) =>
