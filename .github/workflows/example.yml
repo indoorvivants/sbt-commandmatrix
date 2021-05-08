@@ -35,7 +35,7 @@ jobs:
           sbt check-$BUILD_KEY
 
       - name: Run checks
-        if: matrix.scalaVersion != '3_0_0-RC2' && matrix.scalaVersion != '3_0_0-RC3' && matrix.scalaPlatform == "jvm"
+        if: matrix.scalaVersion != '3_0_0-RC2' && matrix.scalaVersion != '3_0_0-RC3' && matrix.scalaPlatform == 'jvm'
         run: |
           cd example
           sbt codeQuality-$BUILD_KEY
