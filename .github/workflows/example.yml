@@ -32,10 +32,10 @@ jobs:
       - name: Run tests
         run: |
           cd example
-          sbt check_$BUILD_KEY
+          sbt check-$BUILD_KEY
 
       - name: Run checks
         if: matrix.scalaVersion != '3_0_0_RC2' && matrix.scalaVersion != "3_0_0_RC3"
         run: |
           cd example
-          sbt codeQuality_$BUILD_KEY
+          sbt codeQuality-$BUILD_KEY
