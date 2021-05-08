@@ -23,7 +23,7 @@ This limits the ability to parallelise jobs on CI, where matrix builds became th
 
 ### Installation
 
-![Maven Central](https://img.shields.io/maven-central/v/com.indoorvivants/sbt-commandmatrix_2.12_1.0/0.0.1)
+![Maven Central](https://index.scala-lang.org/indoorvivants/sbt-commandmatrix/latest.svg?color=orange)
 
 This plugin only works with sbt-projectmatrix, so in your `project/plugins.sbt` you should have:
 

@@ -1,1 +1,13 @@
+project/project
+project/target
+target/
+.bsp/
+example/.bsp
+
 core/target
+
+example/core/target
+example/project/target
+example/project/project
+example/target
+

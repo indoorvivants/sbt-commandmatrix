@@ -1,0 +1,41 @@
+
+name: CI
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["*"]
+
+jobs:
+  example:
+    name: Example ${{matrix.ceVersion}} ${{matrix.scalaVersion}} (${{matrix.scalaPlatform}})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        java: [adopt@1.8]
+        scalaVersion: ["2_12", "2_13", "3_0_0_RC2", "3_0_0_RC3"]
+        scalaPlatform: ["jvm", "js"]
+        ceVersion: ["CE2", "CE3"]
+    runs-on: ${{ matrix.os }}
+    env:
+      BUILD_KEY: ${{matrix.scalaVersion}}_${{matrix.scalaPlatform}}_${{matrix.ceVersion}}
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v2
+
+      - name: Setup Java and Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: ${{ matrix.java }}
+
+      - name: Run tests
+        run: |
+          cd example
+          sbt check_$BUILD_KEY
+
+      - name: Run checks
+        if: !startsWith(matrix.scalaVersion, '3_0')
+        run: |
+          cd example
+          sbt codeQuality_$BUILD_KEY
