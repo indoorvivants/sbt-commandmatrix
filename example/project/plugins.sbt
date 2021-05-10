@@ -1,7 +1,7 @@
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 val versionOverride =
-  sys.env.getOrElse("COMMANDMATRIX_VERSION", "0.0.2+7-44fcfdc7-SNAPSHOT")
+  sys.env.getOrElse("COMMANDMATRIX_VERSION", "0.0.3")
 
 addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.8.0")
 addSbtPlugin("com.indoorvivants" % "sbt-commandmatrix" % versionOverride)
