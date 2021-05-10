@@ -38,11 +38,12 @@ Where the version can be picked up from the badge above.
 
 A more involved demonstration of techniques below is in the example:
 
-1.
-[build.sbt](https://github.com/indoorvivants/sbt-commandmatrix/blob/master/example/build.sbt)
-2. [Github Actions
+* [build.sbt](https://github.com/indoorvivants/sbt-commandmatrix/blob/master/example/build.sbt)
+
+* [Github Actions
    workflow](https://github.com/indoorvivants/sbt-commandmatrix/blob/master/.github/workflows/example.yml)
-3. [Sample matrix build](https://github.com/indoorvivants/sbt-commandmatrix/actions/runs/822941619)
+
+* [Sample matrix build](https://github.com/indoorvivants/sbt-commandmatrix/actions/runs/822941619)
 
 ---
 
@@ -125,8 +126,9 @@ In this case, you can use `CrossCommand.composite` like this:
   )
 ```
 
-[1]: only consider JVM projects not on Scala 3
-[2]: for all the filtered out project, produce an empty command
+* [1]: only consider JVM projects not on Scala 3
+
+* [2]: for all the filtered out project, produce an empty command
 
 Because of stubbing, running `codeQuality-3.0.0-RC3-jvm` will succeed without
 doing
