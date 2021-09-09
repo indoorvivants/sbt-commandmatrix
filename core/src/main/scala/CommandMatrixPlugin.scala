@@ -19,6 +19,10 @@ import sbt._
 import Keys._
 import sbtprojectmatrix.ProjectMatrixPlugin
 import sbt.internal.ProjectMatrix
+import scala.collection.immutable
+import commandmatrix.extra.MatrixAction.Skip
+import commandmatrix.extra.MatrixAction.Keep
+import commandmatrix.extra.MatrixAction.Configure
 
 object CommandMatrixPlugin extends sbt.AutoPlugin {
   override def trigger = allRequirements
@@ -262,4 +266,69 @@ object Dimension {
     Dimension.create(ifMissing) { case v: VirtualAxis.PlatformAxis =>
       v.value
     }
+}
+
+object extra {
+  sealed trait MatrixAction extends Product with Serializable
+  object MatrixAction {
+    case object Skip extends MatrixAction
+    case object Keep extends MatrixAction
+    case class Configure(f: Project => Project) extends MatrixAction
+    case class Settings(set: Seq[Def.Setting[_]]) extends MatrixAction
+  }
+
+  case class MatrixScalaVersion(value: String) {
+    def isScala3 = value.startsWith("3.")
+  }
+
+  implicit final class ProjectMatrixExtraOps(val pm: ProjectMatrix)
+      extends AnyVal {
+    def someVariations(
+        scalaVersions: List[String],
+        axes: List[VirtualAxis]*
+    )(
+        conf: PartialFunction[
+          (MatrixScalaVersion, List[VirtualAxis]),
+          MatrixAction
+        ]
+    ): ProjectMatrix = {
+      def go(sq: List[List[VirtualAxis]]): List[List[VirtualAxis]] = {
+        sq match {
+          case Nil         => List.empty
+          case head :: Nil => head.map(List(_))
+          case head :: tl =>
+            val rest = go(tl)
+            head.flatMap { va =>
+              rest.map(va :: _)
+            }
+        }
+      }
+      val actions = for {
+        scalaV <- scalaVersions
+        axisValues <- go(axes.map(_.toList).toList).map(_.reverse)
+      } yield (
+        scalaV,
+        axisValues,
+        conf.lift
+          .apply(MatrixScalaVersion(scalaV) -> axisValues)
+          .getOrElse(MatrixAction.Keep)
+      )
+
+      actions.foldLeft(pm) { case (pm, (scalaV, values, action)) =>
+        action match {
+          case Skip         => pm
+          case Keep         => pm.customRow(Seq(scalaV), values, Seq.empty)
+          case Configure(f) => pm.customRow(Seq(scalaV), values, f)
+          case MatrixAction.Settings(set) =>
+            pm.customRow(Seq(scalaV), values, set)
+        }
+      }
+    }
+
+    def allVariations(
+        scalaVersions: List[String],
+        axes: List[VirtualAxis]*
+    ): ProjectMatrix =
+      someVariations(scalaVersions, axes: _*) { case _ => MatrixAction.Keep }
+  }
 }

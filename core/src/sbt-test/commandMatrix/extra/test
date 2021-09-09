@@ -1,0 +1,18 @@
+> coreConfig1_2/compile
+-> coreConfig1_2JS3/compile
+> coreConfig1_3JS3/compile
+
+# 2_12 gets verify ok
+> coreConfig1_22_12/verify
+
+# any JS gets verify ok
+> coreConfig1_2JS/verify
+> coreConfig1_3JS/verify
+> coreConfig1_3JS2_12/verify
+> coreConfig1_3JS3/verify
+
+
+-> coreConfig1_2/verify
+-> coreConfig1_3/verify
+-> coreConfig1_23/verify
+-> coreConfig1_33/verify
