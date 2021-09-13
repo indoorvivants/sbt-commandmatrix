@@ -22,7 +22,7 @@ This plugin extends [sbt-projectmatrix](https://github.com/sbt/sbt-projectmatrix
 
 ### Installation
 
-![Maven Central](https://index.scala-lang.org/indoorvivants/sbt-commandmatrix/latest.svg?color=orange)
+[![sbt-commandmatrix Scala version support](https://index.scala-lang.org/indoorvivants/sbt-commandmatrix/sbt-commandmatrix/latest-by-scala-version.svg?targetType=Sbt)](https://index.scala-lang.org/indoorvivants/sbt-commandmatrix/sbt-commandmatrix)
 
 This plugin only works with sbt-projectmatrix, so in your `project/plugins.sbt` you should have:
 
