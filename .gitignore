@@ -2,6 +2,10 @@ project/project
 project/target
 target/
 .bsp/
+.bloop
+.metals
+project/metals.sbt
+.vscode
 example/.bsp
 
 core/target

@@ -1,18 +1,26 @@
-> coreConfig1_2/compile
--> coreConfig1_2JS3/compile
-> coreConfig1_3JS3/compile
+# Requirement 1: Scala3 + Scala Native is disabled
+> core-V1Native/version
+> core-V2Native/version
+> core-V1Native2_12/version
+> core-V2Native2_12/version
+-> core-V1Native3/version
+-> core-V2Native3/version
 
-# 2_12 gets verify ok
-> coreConfig1_22_12/verify
+# Requirement 2: Scalafix is disabled for Scala 3 projects
 
-# any JS gets verify ok
-> coreConfig1_2JS/verify
-> coreConfig1_3JS/verify
-> coreConfig1_3JS2_12/verify
-> coreConfig1_3JS3/verify
+> core-V1/scalafix
+> core-V2/scalafix
+> core-V1JS/scalafix
+> core-V2JS/scalafix
+> core-V1Native/scalafix
+> core-V2Native/scalafix
+-> core-V13/scalafix
+-> core-V23/scalafix
 
-
--> coreConfig1_2/verify
--> coreConfig1_3/verify
--> coreConfig1_23/verify
--> coreConfig1_33/verify
+# Requirement 3
+> core-V1JS/notPublished
+> core-V2JS/notPublished
+> core-V1JS2_12/notPublished
+> core-V2JS2_12/notPublished
+-> core-V1JS3/notPublished
+-> core-V2JS3/notPublished
