@@ -1,0 +1,26 @@
+# Requirement 1: Scala3 + Scala Native is disabled
+> core-V1Native/version
+> core-V2Native/version
+> core-V1Native2_12/version
+> core-V2Native2_12/version
+-> core-V1Native3/version
+-> core-V2Native3/version
+
+# Requirement 2: Scalafix is disabled for Scala 3 projects
+
+> core-V1/scalafix
+> core-V2/scalafix
+> core-V1JS/scalafix
+> core-V2JS/scalafix
+> core-V1Native/scalafix
+> core-V2Native/scalafix
+-> core-V13/scalafix
+-> core-V23/scalafix
+
+# Requirement 3
+> core-V1JS/notPublished
+> core-V2JS/notPublished
+> core-V1JS2_12/notPublished
+> core-V2JS2_12/notPublished
+-> core-V1JS3/notPublished
+-> core-V2JS3/notPublished
