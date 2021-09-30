@@ -20,9 +20,6 @@ import Keys._
 import sbtprojectmatrix.ProjectMatrixPlugin
 import sbt.internal.ProjectMatrix
 import scala.collection.immutable
-import commandmatrix.extra.MatrixAction.Skip
-import commandmatrix.extra.MatrixAction.Keep
-import commandmatrix.extra.MatrixAction.Configure
 
 object CommandMatrixPlugin extends sbt.AutoPlugin {
   override def trigger = allRequirements
@@ -270,27 +267,68 @@ object Dimension {
 
 object extra {
   sealed trait MatrixAction extends Product with Serializable
+
   object MatrixAction {
-    case object Skip extends MatrixAction
-    case object Keep extends MatrixAction
-    case class Configure(f: Project => Project) extends MatrixAction
-    case class Settings(set: Seq[Def.Setting[_]]) extends MatrixAction
+
+    case class Act(
+        selector: (MatrixScalaVersion, Seq[VirtualAxis]) => Boolean,
+        what: MatrixAction
+    )
+    object Act {
+      case object Skip extends MatrixAction
+      case object Keep extends MatrixAction
+      case class Configure(f: Project => Project) extends MatrixAction
+      case class Settings(set: Seq[Def.Setting[_]]) extends MatrixAction
+    }
+
+    class ActBuilder(
+        selector: (MatrixScalaVersion, Seq[VirtualAxis]) => Boolean
+    ) {
+      def Skip = Act(selector, Act.Skip)
+      def Keep = Act(selector, Act.Keep)
+      def Configure(f: Project => Project) =
+        Act(selector, Act.Configure(f))
+      def Settings(set: Seq[Def.Setting[_]]) =
+        Act(selector, Act.Settings(set))
+    }
+
+    def ForScala(selector: MatrixScalaVersion => Boolean) =
+      new ActBuilder((scalaV, _) => selector(scalaV))
+
+    def ForAxes(selector: Seq[VirtualAxis] => Boolean) =
+      new ActBuilder((_, axes) => selector(axes))
+
+    def ForAll = new ActBuilder((_, _) => true)
+
+    def ForPlatforms(selector: VirtualAxis.PlatformAxis => Boolean) =
+      new ActBuilder((_, axes) =>
+        axes.collectFirst {
+          case p: VirtualAxis.PlatformAxis if selector(p) => p
+        }.nonEmpty
+      )
+
+    def apply(selector: (MatrixScalaVersion, Seq[VirtualAxis]) => Boolean) =
+      new ActBuilder(selector)
+
+    def ForPlatform(target: VirtualAxis.PlatformAxis => Boolean) =
+      new ActBuilder((_, axes) =>
+        axes.collectFirst {
+          case p: VirtualAxis.PlatformAxis if p == target => p
+        }.nonEmpty
+      )
+
   }
 
   case class MatrixScalaVersion(value: String) {
     def isScala3 = value.startsWith("3.")
+    def isScala2 = value.startsWith("2.")
   }
 
   implicit final class ProjectMatrixExtraOps(val pm: ProjectMatrix)
       extends AnyVal {
-    def someVariations(
-        scalaVersions: List[String],
-        axes: List[VirtualAxis]*
-    )(
-        conf: PartialFunction[
-          (MatrixScalaVersion, List[VirtualAxis]),
-          MatrixAction
-        ]
+
+    def someVariations(scalaVersions: List[String], axes: List[VirtualAxis]*)(
+        conf: MatrixAction.Act*
     ): ProjectMatrix = {
       def go(sq: List[List[VirtualAxis]]): List[List[VirtualAxis]] = {
         sq match {
@@ -303,24 +341,59 @@ object extra {
             }
         }
       }
+
+      def results(
+          scalaV: MatrixScalaVersion,
+          axes: List[VirtualAxis]
+      ): List[MatrixAction] =
+        conf.toList.collect {
+          case ma if ma.selector(scalaV, axes) => ma.what
+        }
+
       val actions = for {
         scalaV <- scalaVersions
         axisValues <- go(axes.map(_.toList).toList).map(_.reverse)
       } yield (
         scalaV,
         axisValues,
-        conf.lift
-          .apply(MatrixScalaVersion(scalaV) -> axisValues)
-          .getOrElse(MatrixAction.Keep)
+        results(MatrixScalaVersion(scalaV), axisValues)
       )
 
-      actions.foldLeft(pm) { case (pm, (scalaV, values, action)) =>
-        action match {
-          case Skip         => pm
-          case Keep         => pm.customRow(Seq(scalaV), values, Seq.empty)
-          case Configure(f) => pm.customRow(Seq(scalaV), values, f)
-          case MatrixAction.Settings(set) =>
-            pm.customRow(Seq(scalaV), values, set)
+      def collapse(
+          actions: Seq[MatrixAction]
+      ): Either[Project => Project, Seq[Def.Setting[_]]] = {
+        import MatrixAction.Act
+        val settings = actions.collect { case Act.Settings(setts) =>
+          setts
+        }.flatten
+
+        val configures = actions.collect { case Act.Configure(f) =>
+          f
+        }
+
+        if (configures.nonEmpty) {
+          val fin = configures.reduce(_ andThen _).andThen(_.settings(settings))
+
+          Left(fin)
+        } else {
+          Right(settings)
+        }
+
+      }
+
+      actions.foldLeft(pm) { case (current, (scalaV, axes, actions)) =>
+        val axesStr = axes.mkString(", ")
+        actions match {
+          case Nil =>
+            current.customRow(Seq(scalaV), axes, Seq.empty)
+          case l if l.contains(MatrixAction.Act.Skip) => current
+          case other =>
+            collapse(other) match {
+              case Left(configure) =>
+                current.customRow(Seq(scalaV), axes, configure)
+              case Right(settings) =>
+                current.customRow(Seq(scalaV), axes, settings)
+            }
         }
       }
     }
@@ -329,6 +402,6 @@ object extra {
         scalaVersions: List[String],
         axes: List[VirtualAxis]*
     ): ProjectMatrix =
-      someVariations(scalaVersions, axes: _*) { case _ => MatrixAction.Keep }
+      someVariations(scalaVersions, axes: _*)(MatrixAction.ForAll.Keep)
   }
 }
