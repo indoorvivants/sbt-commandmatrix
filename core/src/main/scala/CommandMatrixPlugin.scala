@@ -20,6 +20,7 @@ import Keys._
 import sbtprojectmatrix.ProjectMatrixPlugin
 import sbt.internal.ProjectMatrix
 import scala.collection.immutable
+import scala.util.Try
 
 object CommandMatrixPlugin extends sbt.AutoPlugin {
   override def trigger = allRequirements
@@ -327,6 +328,53 @@ object extra {
   implicit final class ProjectMatrixExtraOps(val pm: ProjectMatrix)
       extends AnyVal {
 
+    // Copied from https://github.com/sbt/sbt-projectmatrix/blob/develop/src/main/scala/sbt/internal/ProjectMatrix.scala#L405
+    // To be removed when projectmatrix allows callnig builders
+    // with custom axes
+    // Note that this is taking advantage of unintentionally public ReflectionUtil
+    // If projectmatrix removes it, we can inline it
+    private def scalajsPlugin(classLoader: ClassLoader): Try[AutoPlugin] = {
+      import sbtprojectmatrix.ReflectionUtil._
+      withContextClassloader(classLoader) { loader =>
+        getSingletonObject[AutoPlugin](
+          loader,
+          "org.scalajs.sbtplugin.ScalaJSPlugin$"
+        )
+      }
+    }
+
+    private def nativePlugin(classLoader: ClassLoader): Try[AutoPlugin] = {
+      import sbtprojectmatrix.ReflectionUtil._
+      withContextClassloader(classLoader) { loader =>
+        getSingletonObject[AutoPlugin](
+          loader,
+          "scala.scalanative.sbtplugin.ScalaNativePlugin$"
+        )
+      }
+    }
+
+    private def enableScalaJSPlugin(project: Project): Project =
+      project.enablePlugins(
+        scalajsPlugin(this.getClass.getClassLoader).getOrElse(
+          sys.error(
+            """Scala.js plugin was not found. Add the sbt-scalajs plugin into project/plugins.sbt:
+                    |  addSbtPlugin("org.scala-js" % "sbt-scalajs" % "x.y.z")
+                    |""".stripMargin
+          )
+        )
+      )
+
+    private def enableScalaNativePlugin(project: Project): Project =
+      project.enablePlugins(
+        nativePlugin(this.getClass.getClassLoader).getOrElse(
+          sys.error(
+            """Scala Native plugin was not found. Add the sbt-scala-native plugin into project/plugins.sbt:
+                    |  addSbtPlugin("org.scala-native" % "sbt-scala-native" % "x.y.z")
+                    |""".stripMargin
+          )
+        )
+      )
+
     def someVariations(scalaVersions: List[String], axes: List[VirtualAxis]*)(
         conf: MatrixAction.Act*
     ): ProjectMatrix = {
@@ -381,14 +429,21 @@ object extra {
 
       }
 
+      val enableSJS = MatrixAction.Act.Configure(enableScalaJSPlugin)
+      val enableSN = MatrixAction.Act.Configure(enableScalaNativePlugin)
+
+      def extra(axes: Seq[VirtualAxis]): List[MatrixAction] =
+        if (axes.contains(VirtualAxis.js)) List(enableSJS)
+        else if (axes.contains(VirtualAxis.native)) List(enableSN)
+        else Nil
+
       actions.foldLeft(pm) { case (current, (scalaV, axes, actions)) =>
         val axesStr = axes.mkString(", ")
         actions match {
-          case Nil =>
-            current.customRow(Seq(scalaV), axes, Seq.empty)
           case l if l.contains(MatrixAction.Act.Skip) => current
           case other =>
-            collapse(other) match {
+            val collapsed = collapse(other ++ extra(axes))
+            collapsed match {
               case Left(configure) =>
                 current.customRow(Seq(scalaV), axes, configure)
               case Right(settings) =>
