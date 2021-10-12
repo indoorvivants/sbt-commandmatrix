@@ -24,3 +24,20 @@
 > core-V2JS2_12/notPublished
 -> core-V1JS3/notPublished
 -> core-V2JS3/notPublished
+
+# Requirement 4
+# Correct plugins are added: Scala.js
+> core-V1JS/jsEnvInput
+> core-V2JS/jsEnvInput
+> core-V1JS2_12/jsEnvInput
+> core-V2JS2_12/jsEnvInput
+> core-V1JS3/jsEnvInput
+> core-V2JS3/jsEnvInput
+# Correct plugins are added: Scala.Native
+> core-V2Native/nativeConfig
+> core-V1Native/nativeConfig
+> core-V2Native2_12/nativeConfig
+> core-V1Native2_12/nativeConfig
+
+
+

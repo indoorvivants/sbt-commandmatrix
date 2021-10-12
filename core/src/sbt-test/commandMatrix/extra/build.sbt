@@ -11,25 +11,25 @@ lazy val core = projectMatrix
     List(scala212, scala213, scala3),
     List(VirtualAxis.jvm, VirtualAxis.js, VirtualAxis.native),
     List(LibraryAxis.V1, LibraryAxis.V2)
-  ) {
+  )(
     // 1: Completely remove the `Scala 3 + Scala Native` combination
-    case (scalaV, axes)
-        if scalaV.isScala3 && axes.contains(VirtualAxis.native) =>
-      MatrixAction.Skip
-
+    MatrixAction((scalaV, axes) =>
+      scalaV.isScala3 && axes.contains(VirtualAxis.native)
+    ).Skip,
     // 2: Disable Scalafix plugin for all Scala 3 projects
-    case (scalaV, _) if scalaV.isScala3 =>
-      MatrixAction.Configure(_.disablePlugins(ScalafixPlugin))
-
-    // 3: Not publish any of the Scala 2 projects on Scala.js
-    case (scalaV, axes) if !scalaV.isScala3 && axes.contains(VirtualAxis.js) =>
-      MatrixAction.Settings(
-        Seq(
-          publish / skip := true,
-          publishLocal / skip := true
-        )
+    MatrixAction
+      .ForScala(_.isScala3)
+      .Configure(_.disablePlugins(ScalafixPlugin)),
+    // 3: Not publish any of the Scala 2 projects on Scala.js *
+    MatrixAction((scalaV, axes) =>
+      scalaV.isScala2 && axes.contains(VirtualAxis.js)
+    ).Settings(
+      Seq(
+        publish / skip := true,
+        publishLocal / skip := true
       )
-  }
+    )
+  )
   .settings(
     notPublished := {
       if ((publish / skip).value) () else throw new Exception("what")
