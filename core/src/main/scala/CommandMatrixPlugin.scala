@@ -307,17 +307,23 @@ object extra {
           case p: VirtualAxis.PlatformAxis if selector(p) => p
         }.nonEmpty
       )
+    
+    def ForPlatforms(selector: VirtualAxis.PlatformAxis*) =
+      new ActBuilder((_, axes) =>
+        axes.collectFirst {
+          case p: VirtualAxis.PlatformAxis if selector.contains(p) => p
+        }.nonEmpty
+      )
 
     def apply(selector: (MatrixScalaVersion, Seq[VirtualAxis]) => Boolean) =
       new ActBuilder(selector)
 
-    def ForPlatform(target: VirtualAxis.PlatformAxis => Boolean) =
+    def ForPlatform(target: VirtualAxis.PlatformAxis) =
       new ActBuilder((_, axes) =>
         axes.collectFirst {
           case p: VirtualAxis.PlatformAxis if p == target => p
         }.nonEmpty
       )
-
   }
 
   case class MatrixScalaVersion(value: String) {
