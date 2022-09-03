@@ -3,7 +3,7 @@ lazy val core = project
   .settings(name := "sbt-commandmatrix")
   .enablePlugins(SbtPlugin)
   .settings(
-    addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.8.0"),
+    addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.9.0"),
     scriptedLaunchOpts := {
       scriptedLaunchOpts.value ++
         Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
@@ -17,7 +17,8 @@ inThisBuild(
   Seq(
     version := {
       val orig = (ThisBuild / version).value
-      if (orig.endsWith("-SNAPSHOT") && !sys.env.contains("CI")) "0.1.0-SNAPSHOT"
+      if (orig.endsWith("-SNAPSHOT") && !sys.env.contains("CI"))
+        "0.1.0-SNAPSHOT"
       else orig
     },
     organization := "com.indoorvivants",
