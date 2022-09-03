@@ -307,7 +307,7 @@ object extra {
           case p: VirtualAxis.PlatformAxis if selector(p) => p
         }.nonEmpty
       )
-    
+
     def ForPlatforms(selector: VirtualAxis.PlatformAxis*) =
       new ActBuilder((_, axes) =>
         axes.collectFirst {
