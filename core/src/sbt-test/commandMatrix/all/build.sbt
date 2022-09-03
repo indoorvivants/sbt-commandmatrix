@@ -2,7 +2,7 @@ import commandmatrix._
 
 lazy val configKey = settingKey[String]("")
 
-lazy val scala212 = "2.12.13"
+lazy val scala212 = "2.12.16"
 lazy val scala213 = "2.13.5"
 
 import ConfigAxis._
