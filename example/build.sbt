@@ -50,10 +50,10 @@ inThisBuild(
 )
 
 val scalaVersions = Seq(
-  "2.12.13",
-  "2.13.5",
-  "3.0.0-RC2",
-  "3.0.0-RC3"
+  "2.12.20",
+  "2.13.17",
+  "3.3.7",
+  "3.8.2"
 )
 
 lazy val root = project

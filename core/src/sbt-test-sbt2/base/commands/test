@@ -1,0 +1,14 @@
+> projects
+> commands
+
+> verify-2_12-jvm
+$ exists result-verify-jvm-2.12
+> verify-2_13-jvm
+$ exists result-verify-jvm-2.13
+> verify-2_12-native
+$ exists result-verify-native-2.12
+-> verify-2_13-native
+> verifyCustom-2_12-jvm-config12
+$ exists result-custom-jvm-2.12-1.2
+> verifyCustom-2_13-jvm-config13
+$ exists result-custom-jvm-2.13-1.3
