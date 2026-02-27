@@ -72,6 +72,11 @@ lazy val example =
         .Settings(Seq(name := "example3LTS"))
     )
 
+lazy val dumpVersion = taskKey[Unit]("Dump version")
+ThisBuild / dumpVersion := {
+  IO.write(file("version.txt"), (core.jvm(true) / version).value)
+}
+
 inThisBuild(
   Seq(
     version := {

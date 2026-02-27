@@ -34,5 +34,6 @@ jobs:
 
       - name: Run tests
         run: |
+          sbt publishLocal dumpVersion
           cd example
-          sbt check-$BUILD_KEY codeQuality-$BUILD_KEY
+          COMMANDMATRIX_VERSION=$(cat ../version.txt) sbt check-$BUILD_KEY codeQuality-$BUILD_KEY
