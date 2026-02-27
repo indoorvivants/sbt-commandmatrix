@@ -415,7 +415,7 @@ object extra {
 
       def collapse(
           actions: Seq[MatrixAction]
-      ): Either[Project => Project, Seq[Def.Setting[_]]] = {
+      ): Either[Project => Project, Seq[Def.Setting[?]]] = {
         import MatrixAction.Act
         val settings = actions.collect { case Act.Settings(setts) =>
           setts
@@ -465,6 +465,6 @@ object extra {
         scalaVersions: List[String],
         axes: List[VirtualAxis]*
     ): ProjectMatrix =
-      someVariations(scalaVersions, axes: _*)(MatrixAction.ForAll.Keep)
+      someVariations(scalaVersions, axes*)(MatrixAction.ForAll.Keep)
   }
 }

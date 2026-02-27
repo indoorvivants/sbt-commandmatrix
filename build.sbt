@@ -71,6 +71,10 @@ lazy val example =
         .ForScala(_.value == Ver.scala3LTS)
         .Settings(Seq(name := "example3LTS"))
     )
+    .settings(
+      publish / skip := true,
+      publishLocal / skip := true
+    )
 
 lazy val dumpVersion = taskKey[Unit]("Dump version")
 ThisBuild / dumpVersion := {
