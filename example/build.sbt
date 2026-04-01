@@ -45,7 +45,8 @@ inThisBuild(
       // we can create a noop command
       // this helps on CI
       stubMissing = true
-    )
+    ),
+    allowUnsafeScalaLibUpgrade := true
   )
 )
 
