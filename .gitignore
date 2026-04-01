@@ -14,4 +14,6 @@ example/core/target
 example/project/target
 example/project/project
 example/target
-
+version.txt
+.mcp.json
+**/metals.sbt
