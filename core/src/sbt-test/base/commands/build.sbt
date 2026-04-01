@@ -2,8 +2,8 @@ import commandmatrix._
 
 lazy val configKey = settingKey[String]("")
 
-lazy val scala212 = "2.12.13"
-lazy val scala213 = "2.13.5"
+lazy val scala212 = "2.12.20"
+lazy val scala213 = "2.13.17"
 
 import ConfigAxis._
 
@@ -18,7 +18,7 @@ lazy val core = projectMatrix
         case v: VirtualAxis.PlatformAxis => v.value
       }.head
 
-      val name = s"result-verify-$platform-${scalaVersion.value}"
+      val name = s"result-verify-$platform-${scalaBinaryVersion.value}"
 
       IO.touch(base / name)
     }
@@ -43,7 +43,7 @@ lazy val custom = projectMatrix
     }.head
 
     val name =
-      s"result-custom-$platform-${scalaVersion.value}-${configKey.value}"
+      s"result-custom-$platform-${scalaBinaryVersion.value}-${configKey.value}"
 
     IO.touch(base / name)
   })

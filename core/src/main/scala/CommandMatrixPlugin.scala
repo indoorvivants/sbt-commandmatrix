@@ -17,14 +17,14 @@
 package commandmatrix
 import sbt._
 import Keys._
-import sbtprojectmatrix.ProjectMatrixPlugin
-import sbt.internal.ProjectMatrix
 import scala.collection.immutable
 import scala.util.Try
 
+import Compat.*
+
 object CommandMatrixPlugin extends sbt.AutoPlugin {
   override def trigger = allRequirements
-  override def requires = ProjectMatrixPlugin
+  override def requires = Requirement
 
   object autoImport extends Experimental
 
@@ -36,7 +36,7 @@ trait Experimental {
   object CrossCommand {
     def single(
         cmd: String,
-        matrices: Seq[sbt.internal.ProjectMatrix],
+        matrices: Seq[Compat.ProjectMatrix],
         dimensions: Seq[Dimension],
         filter: Seq[VirtualAxis] => Boolean = _ => true,
         stubMissing: Boolean = false
@@ -50,7 +50,7 @@ trait Experimental {
 
     def all(
         cmds: Seq[String],
-        matrices: Seq[sbt.internal.ProjectMatrix],
+        matrices: Seq[Compat.ProjectMatrix],
         dimensions: Seq[Dimension],
         filter: Seq[VirtualAxis] => Boolean = _ => true,
         stubMissing: Boolean = false
@@ -67,7 +67,7 @@ trait Experimental {
     def aliased(
         cmd: String,
         alias: String,
-        matrices: Seq[sbt.internal.ProjectMatrix],
+        matrices: Seq[Compat.ProjectMatrix],
         dimensions: Seq[Dimension],
         filter: Seq[VirtualAxis] => Boolean = _ => true,
         stubMissing: Boolean = false
@@ -81,7 +81,7 @@ trait Experimental {
     def composite(
         name: String,
         commands: Seq[String],
-        matrices: Seq[sbt.internal.ProjectMatrix],
+        matrices: Seq[Compat.ProjectMatrix],
         dimensions: Seq[Dimension],
         filter: Seq[VirtualAxis] => Boolean = _ => true,
         stubMissing: Boolean = false
@@ -169,7 +169,7 @@ trait Experimental {
 
   private[commandmatrix] def crossCommand(
       command: CommandType,
-      matrices: Seq[sbt.internal.ProjectMatrix],
+      matrices: Seq[Compat.ProjectMatrix],
       dimensions: Seq[Dimension],
       filter: Seq[VirtualAxis] => Boolean
   ): Seq[Command] = {
@@ -257,6 +257,7 @@ object Dimension {
         }
         .map(v => s"${v._1}_${v._2}")
         .getOrElse(v.scalaVersion.replace('.', '_'))
+
     }
   }
 
@@ -279,7 +280,7 @@ object extra {
       case object Skip extends MatrixAction
       case object Keep extends MatrixAction
       case class Configure(f: Project => Project) extends MatrixAction
-      case class Settings(set: Seq[Def.Setting[_]]) extends MatrixAction
+      case class Settings(set: Seq[Def.Setting[?]]) extends MatrixAction
     }
 
     class ActBuilder(
@@ -289,7 +290,7 @@ object extra {
       def Keep = Act(selector, Act.Keep)
       def Configure(f: Project => Project) =
         Act(selector, Act.Configure(f))
-      def Settings(set: Seq[Def.Setting[_]]) =
+      def Settings(set: Seq[Def.Setting[?]]) =
         Act(selector, Act.Settings(set))
     }
 
@@ -340,7 +341,7 @@ object extra {
     // Note that this is taking advantage of unintentionally public ReflectionUtil
     // If projectmatrix removes it, we can inline it
     private def scalajsPlugin(classLoader: ClassLoader): Try[AutoPlugin] = {
-      import sbtprojectmatrix.ReflectionUtil._
+      import Compat.ReflectionUtil._
       withContextClassloader(classLoader) { loader =>
         getSingletonObject[AutoPlugin](
           loader,
@@ -350,7 +351,7 @@ object extra {
     }
 
     private def nativePlugin(classLoader: ClassLoader): Try[AutoPlugin] = {
-      import sbtprojectmatrix.ReflectionUtil._
+      import Compat.ReflectionUtil._
       withContextClassloader(classLoader) { loader =>
         getSingletonObject[AutoPlugin](
           loader,
@@ -381,14 +382,14 @@ object extra {
         )
       )
 
-    def someVariations(scalaVersions: List[String], axes: List[VirtualAxis]*)(
+    def someVariations(scalaVersions: Seq[String], axes: Seq[VirtualAxis]*)(
         conf: MatrixAction.Act*
     ): ProjectMatrix = {
       def go(sq: List[List[VirtualAxis]]): List[List[VirtualAxis]] = {
         sq match {
           case Nil         => List.empty
           case head :: Nil => head.map(List(_))
-          case head :: tl =>
+          case head :: tl  =>
             val rest = go(tl)
             head.flatMap { va =>
               rest.map(va :: _)
@@ -415,7 +416,7 @@ object extra {
 
       def collapse(
           actions: Seq[MatrixAction]
-      ): Either[Project => Project, Seq[Def.Setting[_]]] = {
+      ): Either[Project => Project, Seq[Def.Setting[?]]] = {
         import MatrixAction.Act
         val settings = actions.collect { case Act.Settings(setts) =>
           setts
@@ -443,17 +444,45 @@ object extra {
         else if (axes.contains(VirtualAxis.native)) List(enableSN)
         else Nil
 
+      val crossVersions = scalaVersions
+        .groupBy { v =>
+          val p = CrossVersion.partialVersion(v)
+
+          p.map { case (major, minor) =>
+            if (major == 3) major -> 0
+            else major -> minor
+          }
+        }
+        .collect { case (Some(v), seq) => v -> seq }
+        .flatMap { case (_, seq) =>
+          seq.map { v =>
+            val cross = if (seq.length > 1) Some(CrossVersion.full) else None
+            v -> cross
+          }
+        }
+        .collect { case (k, Some(v)) => k -> v }
+
       actions.foldLeft(pm) { case (current, (scalaV, axes, actions)) =>
         val axesStr = axes.mkString(", ")
         actions match {
           case l if l.contains(MatrixAction.Act.Skip) => current
-          case other =>
+          case other                                  =>
             val collapsed = collapse(other ++ extra(axes))
             collapsed match {
               case Left(configure) =>
-                current.customRow(Seq(scalaV), axes, configure)
+                current.customRow(
+                  true,
+                  crossVersion = crossVersions.get(scalaV),
+                  Seq(scalaV),
+                  axes
+                )(configure)
               case Right(settings) =>
-                current.customRow(Seq(scalaV), axes, settings)
+                current.customRow(
+                  true,
+                  crossVersion = crossVersions.get(scalaV),
+                  Seq(scalaV),
+                  axes
+                )(p => p.settings(settings))
             }
         }
       }
@@ -463,6 +492,6 @@ object extra {
         scalaVersions: List[String],
         axes: List[VirtualAxis]*
     ): ProjectMatrix =
-      someVariations(scalaVersions, axes: _*)(MatrixAction.ForAll.Keep)
+      someVariations(scalaVersions, axes*)(MatrixAction.ForAll.Keep)
   }
 }

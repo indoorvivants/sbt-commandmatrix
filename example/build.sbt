@@ -45,47 +45,65 @@ inThisBuild(
       // we can create a noop command
       // this helps on CI
       stubMissing = true
-    )
+    ),
+    allowUnsafeScalaLibUpgrade := true
   )
 )
 
-val scalaVersions = Seq(
-  "2.12.13",
-  "2.13.5",
-  "3.0.0-RC2",
-  "3.0.0-RC3"
+val scala3Versions = Seq(
+  "3.3.7",
+  "3.8.2"
 )
+
+val scala2Versions = Seq(
+  "2.12.20",
+  "2.13.17"
+)
+
+val scalaVersions = scala3Versions ++ scala2Versions
 
 lazy val root = project
   .in(file("."))
   .aggregate(core.projectRefs: _*)
 
+import commandmatrix.extra.*
+
 lazy val core =
   projectMatrix
     .in(file("core"))
-    .customRow(
+    .someVariations(
       scalaVersions = scalaVersions,
-      axisValues = Seq(CatsEffect2Axis, VirtualAxis.js),
-      process = (_: Project)
-        .settings(ce2Settings ++ jsSettings)
-        .enablePlugins(ScalaJSPlugin)
-    )
-    .customRow(
-      scalaVersions = scalaVersions,
-      axisValues = Seq(CatsEffect2Axis, VirtualAxis.jvm),
-      settings = ce2Settings
-    )
-    .customRow(
-      scalaVersions = scalaVersions,
-      axisValues = Seq(CatsEffect3Axis, VirtualAxis.js),
-      process = (_: Project)
-        .settings(ce2Settings ++ jsSettings)
-        .enablePlugins(ScalaJSPlugin)
-    )
-    .customRow(
-      scalaVersions = scalaVersions,
-      axisValues = Seq(CatsEffect3Axis, VirtualAxis.jvm),
-      settings = ce3Settings
+      axes = List(CatsEffect2Axis, CatsEffect3Axis),
+      List(VirtualAxis.js, VirtualAxis.jvm)
+    )(
+      MatrixAction
+        .ForAxes(axes =>
+          axes.contains(VirtualAxis.js) && axes.contains(CatsEffect2Axis)
+        )
+        .Settings(
+          ce2Settings ++ jsSettings
+        ),
+      MatrixAction
+        .ForAxes(axes =>
+          axes.contains(VirtualAxis.jvm) && axes.contains(CatsEffect2Axis)
+        )
+        .Settings(
+          ce2Settings
+        ),
+      MatrixAction
+        .ForAxes(axes =>
+          axes.contains(VirtualAxis.jvm) && axes.contains(CatsEffect3Axis)
+        )
+        .Settings(
+          ce3Settings
+        ),
+      MatrixAction
+        .ForAxes(axes =>
+          axes.contains(VirtualAxis.js) && axes.contains(CatsEffect3Axis)
+        )
+        .Settings(
+          ce3Settings ++ jsSettings
+        )
     )
 
 lazy val jsSettings = Seq(
@@ -93,9 +111,9 @@ lazy val jsSettings = Seq(
 )
 
 lazy val ce3Settings = Seq(
-  libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.1.0"
+  libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.7.0"
 )
 
 lazy val ce2Settings = Seq(
-  libraryDependencies += "org.typelevel" %%% "cats-effect" % "2.5.0"
+  libraryDependencies += "org.typelevel" %%% "cats-effect" % "2.5.5"
 )

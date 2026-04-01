@@ -1,0 +1,53 @@
+> projects
+
+# Requirement 1: Scala3 + Scala Native is disabled
+> core-V1Native2_13/version
+> core-V2Native2_13/version
+> core-V1Native2_12/version
+> core-V2/version
+> core-V1/version
+> core-V22_12/version
+> core-V12_13/version
+> core-V22_13/version
+> core-V12_12/version
+> core-V22_12/version
+-> core-V1Native/version
+-> core-V2Native/version
+-> core-V1Native/version
+-> core-V2Native/version
+
+# Requirement 2: Scalafix is disabled for Scala 3 projects
+# this test cannot be run until scalafix is published for 2.0.0-RC9
+#    > core-V1/scalafix
+#    > core-V2/scalafix
+#    > core-V1JS/scalafix
+#    > core-V2JS/scalafix
+#    > core-V1Native/scalafix
+#    > core-V2Native/scalafix
+#    -> core-V13/scalafix
+#    -> core-V23/scalafix
+
+# Requirement 3
+# this test cannot be run until scala.js is published for 2.0.0-RC9
+#    > core-V1JS/notPublished
+#    > core-V2JS/notPublished
+#    > core-V1JS2_12/notPublished
+#    > core-V2JS2_12/notPublished
+#    -> core-V1JS3/notPublished
+#    -> core-V2JS3/notPublished
+
+# Requirement 4
+# Correct plugins are added: Scala.js
+# this test cannot be run until scala.js is published for 2.0.0-RC9
+#   > core-V1JS/jsEnvInput
+#   > core-V2JS/jsEnvInput
+#   > core-V1JS2_12/jsEnvInput
+#   > core-V2JS2_12/jsEnvInput
+#   > core-V1JS3/jsEnvInput
+#   > core-V2JS3/jsEnvInput
+
+# Correct plugins are added: Scala.Native
+> core-V2Native2_13/nativeConfig
+> core-V1Native2_13/nativeConfig
+> core-V2Native2_12/nativeConfig
+> core-V1Native2_12/nativeConfig

@@ -1,3 +1,5 @@
+> projects
+
 # Requirement 1: Scala3 + Scala Native is disabled
 > core-V1Native/version
 > core-V2Native/version
@@ -38,6 +40,3 @@
 > core-V1Native/nativeConfig
 > core-V2Native2_12/nativeConfig
 > core-V1Native2_12/nativeConfig
-
-
-
