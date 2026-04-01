@@ -1,7 +1,14 @@
+import java.nio.file.Paths
+import java.nio.file.Files
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-val versionOverride =
-  sys.env.getOrElse("COMMANDMATRIX_VERSION", "0.0.3")
+val versionOverride = {
+  if (Files.exists(Paths.get("../../version.txt"))) {
+    println("READING VERSION from version.txt")
+    scala.io.Source.fromFile("../../version.txt").mkString
+  } else
+    sys.env.getOrElse("COMMANDMATRIX_VERSION", "0.0.3")
+}
 
 addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.11.0")
 addSbtPlugin("com.indoorvivants" % "sbt-commandmatrix" % versionOverride)

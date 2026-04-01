@@ -257,6 +257,7 @@ object Dimension {
         }
         .map(v => s"${v._1}_${v._2}")
         .getOrElse(v.scalaVersion.replace('.', '_'))
+
     }
   }
 
@@ -381,14 +382,14 @@ object extra {
         )
       )
 
-    def someVariations(scalaVersions: List[String], axes: List[VirtualAxis]*)(
+    def someVariations(scalaVersions: Seq[String], axes: Seq[VirtualAxis]*)(
         conf: MatrixAction.Act*
     ): ProjectMatrix = {
       def go(sq: List[List[VirtualAxis]]): List[List[VirtualAxis]] = {
         sq match {
           case Nil         => List.empty
           case head :: Nil => head.map(List(_))
-          case head :: tl =>
+          case head :: tl  =>
             val rest = go(tl)
             head.flatMap { va =>
               rest.map(va :: _)
@@ -443,19 +444,45 @@ object extra {
         else if (axes.contains(VirtualAxis.native)) List(enableSN)
         else Nil
 
+      val crossVersions = scalaVersions
+        .groupBy { v =>
+          val p = CrossVersion.partialVersion(v)
+
+          p.map { case (major, minor) =>
+            if (major == 3) major -> 0
+            else major -> minor
+          }
+        }
+        .collect { case (Some(v), seq) => v -> seq }
+        .flatMap { case (_, seq) =>
+          seq.map { v =>
+            val cross = if (seq.length > 1) Some(CrossVersion.full) else None
+            v -> cross
+          }
+        }
+        .collect { case (k, Some(v)) => k -> v }
+
       actions.foldLeft(pm) { case (current, (scalaV, axes, actions)) =>
         val axesStr = axes.mkString(", ")
         actions match {
           case l if l.contains(MatrixAction.Act.Skip) => current
-          case other =>
+          case other                                  =>
             val collapsed = collapse(other ++ extra(axes))
             collapsed match {
               case Left(configure) =>
-                current.customRow(true, crossVersion = None, Seq(scalaV), axes)(configure)
+                current.customRow(
+                  true,
+                  crossVersion = crossVersions.get(scalaV),
+                  Seq(scalaV),
+                  axes
+                )(configure)
               case Right(settings) =>
-                current.customRow(true, crossVersion = None, Seq(scalaV), axes)(p =>
-                  p.settings(settings)
-                )
+                current.customRow(
+                  true,
+                  crossVersion = crossVersions.get(scalaV),
+                  Seq(scalaV),
+                  axes
+                )(p => p.settings(settings))
             }
         }
       }
