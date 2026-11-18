@@ -202,7 +202,7 @@ trait Experimental {
         buckets += found -> (proj, include)
       }
 
-    buckets.result
+    buckets.result()
       .groupBy(_._1)
       .map { case (segments, results) =>
         val projects = results

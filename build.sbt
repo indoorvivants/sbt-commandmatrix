@@ -7,12 +7,13 @@ lazy val core = projectMatrix
     (pluginCrossBuild / sbtVersion) := {
       scalaBinaryVersion.value match {
         case "2.12" => "1.10.0"
-        case _      => "2.0.0-RC9"
+        case _      => "2.1.0"
       }
     },
+    scriptedSbt := (if (scalaBinaryVersion.value == "2.12") "1.13.1" else "2.1.0"),
     scalacOptions ++= {
       scalaBinaryVersion.value match {
-        case "2.12" => "-Xsource:3" :: Nil
+        case "2.12" => Seq("-Xsource:3", "-release:8")
         case _      => Nil
       }
     },
@@ -52,8 +53,8 @@ val Ver = new {
   val scala3Next = "3.8.2"
   val scala3LTS = "3.3.7"
 
-  val sbt1ScalaVersion = "2.12.20"
-  val sbt2ScalaVersion = "3.8.2"
+  val sbt1ScalaVersion = "2.12.21"
+  val sbt2ScalaVersion = "3.9.0"
 
 }
 
